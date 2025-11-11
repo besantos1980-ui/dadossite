@@ -40,12 +40,31 @@ jobs:
       - name: ▶️ Executar script
         run: python atualizar_dados.py
 
-      - name: 📤 Commit e Push (forçado)
+      - - name: 📥 Clonar repositório (com histórico completo e TOKEN explícito)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }} # Garante que o token de escrita seja usado
+          persist-credentials: true 
+          
+# ... (etapas de configuração, instalação e execução do script) ...
+
+      - name: 📤 Commit e Push (SEGURO - sem force)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Automação de Dados"
           git add -A
-          git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
           
-          # 3. ⚠️ Mantendo o Push Forçado para resolver a rejeição.
-          git push origin HEAD:main --force
+          # Tenta o commit; se não houver alterações, ignora o erro e continua
+          git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar. Prosseguindo..."
+          
+          # Se o commit foi bem-sucedido, precisamos integrar as mudanças remotas
+          if [ $? -eq 0 ]; then
+            echo "Tentando integrar as mudanças remotas antes do push..."
+            # Puxa (pull) as últimas alterações, fazendo um rebase para aplicar
+            # o commit do Action por cima delas.
+            git pull origin main --rebase
+            
+            # Tenta o push normal.
+            git push origin HEAD:main
+          fi
