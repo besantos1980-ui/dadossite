@@ -38,7 +38,4 @@ jobs:
           git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
           
           # Sincroniza com remoto antes do push
-          git pull --rebase origin main
-          
-          # Faz o push
-          git push origin main
+          git push origin main --forc
