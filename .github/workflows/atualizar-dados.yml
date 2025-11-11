@@ -1,26 +1,26 @@
-name: 🔄 Atualizar Dados
+name: 🔄 Atualizar Dados e Criar PR
 
 on:
   schedule:
     - cron: '0 9 * * *'
   workflow_dispatch:
 
-# 🔒 Garante permissão de escrita para o token padrão do Actions
+# 🔒 Permissões: É crucial ter permissão de escrita para criar branches e Pull Requests
 permissions:
   contents: write
+  pull-requests: write # Permissão específica para a ação de criar PR
 
 jobs:
   atualizar:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clonar repositório (com histórico completo e token de escrita)
+      - name: 📥 Clonar repositório (Sem histórico completo é suficiente agora)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          # Passa o token explicitamente para garantir a autenticação correta
+          # Não precisamos mais do histórico completo, apenas dos arquivos atuais.
+          fetch-depth: 1 
           token: ${{ secrets.GITHUB_TOKEN }} 
-          persist-credentials: true
 
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v5
@@ -37,31 +37,54 @@ jobs:
           # Cria o arquivo credentials.json a partir do segredo
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
 
-      - name: ▶️ Executar script
+      - name: ▶️ Executar script (que modificará arquivos)
         run: python atualizar_dados.py
-
-      - name: 📤 Commit, Pull e Push (Simplificado)
+      
+      - name: 📝 Commit e Push para um Novo Branch
+        id: commit
         run: |
+          # Define o nome do novo branch
+          BRANCH_NAME="feat/dados-$(date +%Y%m%d%H%M)"
+          COMMIT_MESSAGE="Atualização automática de dados: $(date +%Y-%m-%d)"
+          
+          # Configura as credenciais
           git config --local user.email "action@github.com"
           git config --local user.name "Automação de Dados"
-          git add -A
           
-          # Tenta o commit. Se não houver alterações, o comando falha (exit code 1)
-          # A opção || true faz com que o script ignore a falha e continue
-          git commit -m "Atualização automática de dados" || true
-          
-          # Verifica se o commit foi realizado ou se o status do Git mudou
-          # Usamos o 'git status --porcelain' para ver se há trabalho pendente
-          if [[ $(git status --porcelain) ]]; then
-            echo "Atenção: Houve um erro no commit ou o repositório ainda está sujo após o script. Abortando push."
-            # Se o commit falhou por não haver alterações, este bloco é ignorado.
-            # Se o commit falhou por outro motivo, ele reporta o erro.
-          else
-            echo "Iniciando sincronização e push."
-            
-            # Puxa (pull) as últimas alterações, aplicando o commit do Action por cima (rebase).
-            git pull origin main --rebase
-            
-            # Tenta o push final.
-            git push origin HEAD:main
+          # Verifica se há alterações para commitar
+          if git diff --staged --quiet && git diff --quiet; then
+            echo "Nenhuma alteração nos dados. Encerrando."
+            echo "pushed=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          
+          # Cria o novo branch e alterna para ele
+          git checkout -b $BRANCH_NAME
+          
+          # Faz o commit
+          git add -A
+          git commit -m "$COMMIT_MESSAGE"
+          
+          # Envia o novo branch para o GitHub
+          git push origin $BRANCH_NAME
+          
+          # Exporta variáveis para o próximo passo
+          echo "pushed=true" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: ➕ Criar Pull Request
+        # Só executa se a etapa de commit acima realmente enviou um novo branch
+        if ${{ steps.commit.outputs.pushed == 'true' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          # O branch que acabamos de criar
+          source-branch: ${{ steps.commit.outputs.branch_name }}
+          # O branch principal para onde queremos fazer o merge
+          target-branch: main
+          # Título e corpo do PR
+          title: "🤖 Atualização Automática de Dados: ${{ steps.commit.outputs.branch_name }}"
+          body: |
+            Este Pull Request foi criado automaticamente pelo fluxo de trabalho de dados.
+            
+            Por favor, revise as alterações nos arquivos e faça o merge quando aprovado.
+          token: ${{ secrets.GITHUB_TOKEN }}
