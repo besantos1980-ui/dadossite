@@ -28,7 +28,7 @@ jobs:
 
       - name: Configurar credenciais Google
         run: |
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo "${{ secrets.GOOGLE_CREDENTIALS }}" > credentials.json
 
       - name: Executar script
         run: python atualizar_dados.py
