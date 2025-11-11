@@ -2,7 +2,7 @@ name: 🔄 Atualizar Dados
 
 on:
   schedule:
-    - cron: '0 9 * * *' # Executa todo dia às 9:00 UTC
+    - cron: '0 9 * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,8 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clonar repositório
+      - name: 📥 Clonar repositório (com histórico completo)
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # IMPORTANTE para permitir pull/rebase
+          persist-credentials: true
 
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v4
@@ -36,6 +39,9 @@ jobs:
           git config --local user.name "Automação de Dados"
           git add -A
           git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
-          
+
           # Sincroniza com remoto antes do push
-          git push origin main --forc
+          git pull --rebase origin main
+
+          # Faz o push
+          git push origin main
