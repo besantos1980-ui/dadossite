@@ -5,7 +5,7 @@ on:
     - cron: '0 9 * * *'
   workflow_dispatch:
 
-# 🔒 Solução: Adiciona permissão de escrita (write) para o token GITHUB_TOKEN
+# 1. ✅ Permissão de Escrita Adicionada (Correto)
 permissions:
   contents: write
 
@@ -14,14 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clonar repositório (com histórico completo)
-        uses: actions/checkout@v4 # Atualizei para v4
+      - name: 📥 Clonar repositório (com histórico completo e TOKEN explícito)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true
+          # 2. ✅ Autenticação Explícita do Token
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # O persist-credentials não é mais estritamente necessário, mas pode ficar:
+          persist-credentials: true 
 
       - name: 🐍 Configurar Python
-        uses: actions/setup-python@v5 # Atualizei para v5
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -44,6 +47,5 @@ jobs:
           git add -A
           git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
           
-          # Tenta o push forçado. Com a permissão 'contents: write' acima,
-          # este comando agora deve ser executado sem erro de rejeição.
+          # 3. ⚠️ Mantendo o Push Forçado para resolver a rejeição.
           git push origin HEAD:main --force
