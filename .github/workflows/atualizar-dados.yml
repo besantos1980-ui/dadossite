@@ -1,4 +1,6 @@
 name: 🔄 Atualizar Dados
+permissions:
+  contents: write
 
 on:
   schedule:
