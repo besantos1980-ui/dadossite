@@ -40,23 +40,25 @@ jobs:
       - name: ▶️ Executar script
         run: python atualizar_dados.py
 
-      - name: 📤 Commit e Push (Versão Robusta e Segura)
+      - name: 📤 Commit e Push (Garantindo Execução)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Automação de Dados"
           git add -A
           
-          # Tenta o commit; se não houver alterações, ignora o erro e continua
-          git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar. Prosseguindo..."
-          
-          # Verifica se o commit foi realizado (se o comando anterior foi bem-sucedido)
-          if [ $? -eq 0 ]; then
-            echo "Commit realizado. Integrando mudanças remotas antes do push..."
-            
-            # Puxa (pull) as últimas alterações, fazendo um rebase para aplicar
-            # o commit do Action por cima das mudanças remotas. Isso resolve o erro 'fetch first'.
-            git pull origin main --rebase
-            
-            # Tenta o push normal.
-            git push origin HEAD:main
+          # 1. Verifica se há alguma alteração stageada para commitar
+          if git diff --staged --quiet; then
+            echo "Nenhuma alteração para commitar. Encerrando."
+            exit 0
           fi
+          
+          # 2. Faz o commit, agora garantido de que haverá conteúdo
+          git commit -m "Atualização automática de dados"
+          
+          # 3. Integra mudanças remotas (Pull + Rebase)
+          echo "Integrando mudanças remotas antes do push..."
+          # O rebase é essencial para resolver o 'fetch first'
+          git pull origin main --rebase
+          
+          # 4. Tenta o push final
+          git push origin HEAD:main
