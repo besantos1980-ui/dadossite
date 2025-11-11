@@ -38,7 +38,7 @@ jobs:
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
 
       - name: ▶️ Executar script
-        run: python atualizar_dados.py
+        run: python atualizar-dados.py
 
       - - name: 📥 Clonar repositório (com histórico completo e TOKEN explícito)
         uses: actions/checkout@v4
