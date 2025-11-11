@@ -5,19 +5,23 @@ on:
     - cron: '0 9 * * *'
   workflow_dispatch:
 
+# 🔒 Solução: Adiciona permissão de escrita (write) para o token GITHUB_TOKEN
+permissions:
+  contents: write
+
 jobs:
   atualizar:
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Clonar repositório (com histórico completo)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Atualizei para v4
         with:
           fetch-depth: 0
           persist-credentials: true
 
       - name: 🐍 Configurar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Atualizei para v5
         with:
           python-version: '3.11'
 
@@ -40,5 +44,6 @@ jobs:
           git add -A
           git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
           
-          # Força o push para evitar erro de fast-forward
+          # Tenta o push forçado. Com a permissão 'contents: write' acima,
+          # este comando agora deve ser executado sem erro de rejeição.
           git push origin HEAD:main --force
