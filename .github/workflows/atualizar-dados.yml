@@ -40,25 +40,28 @@ jobs:
       - name: ▶️ Executar script
         run: python atualizar_dados.py
 
-      - name: 📤 Commit e Push (Garantindo Execução)
+      - name: 📤 Commit, Pull e Push (Simplificado)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Automação de Dados"
           git add -A
           
-          # 1. Verifica se há alguma alteração stageada para commitar
-          if git diff --staged --quiet; then
-            echo "Nenhuma alteração para commitar. Encerrando."
-            exit 0
+          # Tenta o commit. Se não houver alterações, o comando falha (exit code 1)
+          # A opção || true faz com que o script ignore a falha e continue
+          git commit -m "Atualização automática de dados" || true
+          
+          # Verifica se o commit foi realizado ou se o status do Git mudou
+          # Usamos o 'git status --porcelain' para ver se há trabalho pendente
+          if [[ $(git status --porcelain) ]]; then
+            echo "Atenção: Houve um erro no commit ou o repositório ainda está sujo após o script. Abortando push."
+            # Se o commit falhou por não haver alterações, este bloco é ignorado.
+            # Se o commit falhou por outro motivo, ele reporta o erro.
+          else
+            echo "Iniciando sincronização e push."
+            
+            # Puxa (pull) as últimas alterações, aplicando o commit do Action por cima (rebase).
+            git pull origin main --rebase
+            
+            # Tenta o push final.
+            git push origin HEAD:main
           fi
-          
-          # 2. Faz o commit, agora garantido de que haverá conteúdo
-          git commit -m "Atualização automática de dados"
-          
-          # 3. Integra mudanças remotas (Pull + Rebase)
-          echo "Integrando mudanças remotas antes do push..."
-          # O rebase é essencial para resolver o 'fetch first'
-          git pull origin main --rebase
-          
-          # 4. Tenta o push final
-          git push origin HEAD:main
