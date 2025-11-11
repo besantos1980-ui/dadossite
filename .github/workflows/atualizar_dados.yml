@@ -1,0 +1,66 @@
+name: 🔄 Atualizar Dados do Google Sheet
+
+on:
+  schedule:
+    # Executa diariamente às 9h UTC (6h no horário de Brasília)
+    - cron: '0 9 * * *'
+  # Permite a execução manual
+  workflow_dispatch:
+
+# Permissões necessárias para criar PRs
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositório
+        uses: actions/checkout@v4
+        with:
+          # Token necessário para autenticar as ações de commit/PR
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Instalar dependências Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install gspread oauth2client
+
+      - name: 🔑 Configurar credenciais Google
+        # Cria o arquivo 'credentials.json' usando o Secret do repositório
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+
+      - name: ▶️ Executar script (Buscar dados e gerar HTML)
+        # Esta etapa executa o script Python que criará o 'index.html'
+        run: python atualizar_dados.py
+
+      - name: ➕ Criar Pull Request com o HTML atualizado
+        # Esta ação verifica se o 'index.html' mudou.
+        # Se mudou, ela faz o commit e abre um PR automaticamente.
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "🤖 [Bot] Atualiza index.html com dados da planilha"
+          title: "🤖 Atualização de Dados: $(date +%Y-%m-%d)"
+          body: |
+            Este PR foi aberto automaticamente.
+            
+            O script `atualizar_dados.py` buscou novos dados da planilha "Dados"
+            e gerou o novo `index.html`.
+            
+            **Por favor, revise as alterações antes de fazer o merge.**
+          
+          # Define o nome do branch (sempre o mesmo, para atualizar o PR existente)
+          branch: "feat/atualizacao-dados-automatica" 
+          # Define o branch alvo
+          base: main
+          # Deleta o branch após o merge
+          delete-branch: true
