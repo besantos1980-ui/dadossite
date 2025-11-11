@@ -1,44 +1,44 @@
 name: 🔄 Atualizar Dados
 
-permissions:
-  contents: write
-
 on:
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 9 * * *' # Executa todo dia às 9:00 UTC
   workflow_dispatch:
 
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Clonar repositório
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@v3
+
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: 📦 Instalar dependências
         run: |
           python -m pip install --upgrade pip
           pip install gspread oauth2client
-      
+
       - name: 🔑 Configurar credenciais Google
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-      
+
       - name: ▶️ Executar script
         run: python atualizar_dados.py
-      
-      - name: 📤 Fazer commit e push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Commit e Push seguro
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "action@github.com"
+          git config --local user.name "Automação de Dados"
           git add -A
+          git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
+          
+          # Sincroniza com remoto antes do push
           git pull --rebase origin main
-          git push
+          
+          # Faz o push
+          git push origin main
