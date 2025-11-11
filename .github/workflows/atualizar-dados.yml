@@ -1,13 +1,11 @@
 name: 🔄 Atualizar Dados
+
 permissions:
   contents: write
 
 on:
   schedule:
-    # Executa todo dia às 9:00 AM (horário UTC)
     - cron: '0 9 * * *'
-  
-  # Permite executar manualmente pelo painel do GitHub
   workflow_dispatch:
 
 jobs:
@@ -16,7 +14,7 @@ jobs:
     
     steps:
       - name: 📥 Clonar repositório
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v4
@@ -36,8 +34,10 @@ jobs:
         run: python atualizar_dados.py
       
       - name: 📤 Fazer commit e push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "Automação de Dados"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add -A
-          git push https://x-access-token:${{ secrets.TOKEN_PUSH }}@github.com/${{ github.repository }}.git
+          git push
