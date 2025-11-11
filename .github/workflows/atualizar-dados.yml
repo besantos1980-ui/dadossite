@@ -1,70 +1,42 @@
-name: 🔄 Atualizar Dados
+name: Atualizar Dados
 
 on:
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 9 * * *' # Executa todo dia às 9:00 UTC
   workflow_dispatch:
-
-# 1. ✅ Permissão de Escrita Adicionada (Correto)
-permissions:
-  contents: write
 
 jobs:
   atualizar:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clonar repositório (com histórico completo e TOKEN explícito)
-        uses: actions/checkout@v4
+      - name: Clonar repositório (com histórico completo)
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          # 2. ✅ Autenticação Explícita do Token
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # O persist-credentials não é mais estritamente necessário, mas pode ficar:
-          persist-credentials: true 
+          persist-credentials: true
 
-      - name: 🐍 Configurar Python
-        uses: actions/setup-python@v5
+      - name: Configurar Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: 📦 Instalar dependências
+      - name: Instalar dependências
         run: |
           python -m pip install --upgrade pip
           pip install gspread oauth2client
 
-      - name: 🔑 Configurar credenciais Google
+      - name: Configurar credenciais Google
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
 
-      - name: ▶️ Executar script
-        run: python atualizar-dados.py
+      - name: Executar script
+        run: python atualizar_dados.py
 
-      - - name: 📥 Clonar repositório (com histórico completo e TOKEN explícito)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }} # Garante que o token de escrita seja usado
-          persist-credentials: true 
-          
-# ... (etapas de configuração, instalação e execução do script) ...
-
-      - name: 📤 Commit e Push (SEGURO - sem force)
+      - name: Commit e Push (forçado)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Automação de Dados"
           git add -A
-          
-          # Tenta o commit; se não houver alterações, ignora o erro e continua
-          git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar. Prosseguindo..."
-          
-          # Se o commit foi bem-sucedido, precisamos integrar as mudanças remotas
-          if [ $? -eq 0 ]; then
-            echo "Tentando integrar as mudanças remotas antes do push..."
-            # Puxa (pull) as últimas alterações, fazendo um rebase para aplicar
-            # o commit do Action por cima delas.
-            git pull origin main --rebase
-            
-            # Tenta o push normal.
-            git push origin HEAD:main
-          fi
+          git commit -m "Atualização automática de dados" || echo "Nenhuma alteração para commitar"
+          git push origin HEAD:main --force
